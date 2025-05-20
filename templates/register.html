@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Inscription</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <h1>Inscription</h1>
+    {{if .}}<p style="color:red;">{{.}}</p>{{end}}
+    <form action="/register_submit" method="post">
+        <label>Email:</label><br>
+        <input type="email" name="email"><br>
+        <label>Pseudo:</label><br>
+        <input type="text" name="username"><br>
+        <label>Mot de passe:</label><br>
+        <input type="password" name="password"><br>
+        <label>Confirmer le mot de passe:</label><br>
+        <input type="password" name="confirm"><br><br>
+        <input type="submit" value="S'inscrire">
+    </form>
+</body>
+</html>

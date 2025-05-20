@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Connexion</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <h1>Connexion</h1>
+    {{if .}}<p style="color:red;">{{.}}</p>{{end}}
+    <form action="/login_submit" method="post">
+        <label>Pseudo:</label><br>
+        <input type="text" name="username"><br>
+        <label>Mot de passe:</label><br>
+        <input type="password" name="password"><br><br>
+        <input type="submit" value="Se connecter">
+    </form>
+</body>
+</html>
