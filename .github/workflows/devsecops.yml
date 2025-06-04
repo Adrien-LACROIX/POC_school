@@ -1,0 +1,89 @@
+name: DevSecOps CI (Go + HTML)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  devsecops:
+    runs-on: ubuntu-latest
+
+    steps:
+    # ✅ 1. Checkout code
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # ✅ 2. Setup Go
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.21'
+
+    # ✅ 3. Install golangci-lint
+    - name: Install golangci-lint
+      run: |
+        curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $HOME/go/bin v1.55.2
+        echo "$HOME/go/bin" >> $GITHUB_PATH
+
+    # ✅ 4. Run golangci-lint
+    - name: Lint code with golangci-lint
+      run: golangci-lint run --timeout=3m
+
+    # ✅ 5. Build the Go project
+    - name: Build Go app
+      run: go build -o app
+
+    # ✅ 6. SonarQube Scan
+    - name: Cache Sonar packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.sonar/cache
+        key: ${{ runner.os }}-sonar
+
+    - name: Run SonarQube Analysis
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      run: |
+        sonar-scanner \
+          -Dsonar.projectKey=ton_projet \
+          -Dsonar.sources=. \
+          -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
+          -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+
+    # ✅ 7. Start the Go web server
+    - name: Start Go Web Server
+      run: |
+        nohup ./app &
+        sleep 10
+
+    # ✅ 8. OWASP ZAP scan with fail check
+    - name: Run ZAP Scan + Fail on risk
+      run: |
+        docker run --network="host" \
+          -v $(pwd):/zap/wrk/:rw \
+          owasp/zap2docker-stable zap-baseline.py \
+          -t http://localhost:8080 \
+          -r zap-report.html \
+          -x zap-report.xml \
+          -J zap-report.json \
+          -d
+
+        echo "🔎 Analyzing ZAP output..."
+        HIGH=$(jq '[.site[].alerts[] | select(.riskcode=="3")] | length' zap-report.json)
+        MEDIUM=$(jq '[.site[].alerts[] | select(.riskcode=="2")] | length' zap-report.json)
+
+        echo "➡️ High: $HIGH | Medium: $MEDIUM"
+        if [ "$HIGH" -gt 0 ] || [ "$MEDIUM" -gt 0 ]; then
+          echo "❌ Critical ZAP alerts detected"
+          exit 1
+        else
+          echo "✅ No critical ZAP alerts"
+        fi
+
+    # ✅ 9. Upload the ZAP Report
+    - name: Upload ZAP Report
+      uses: actions/upload-artifact@v3
+      with:
+        name: ZAP Security Report
+        path: zap-report.html
