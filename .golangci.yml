@@ -1,0 +1,55 @@
+run:
+  timeout: 3m
+  tests: true  # Active aussi l’analyse des fichiers *_test.go
+
+linters:
+  enable:
+    - govet         # Vérifie erreurs logiques Go
+    - staticcheck   # Recommandations avancées
+    - gosimple      # Simplifications possibles
+    - gofmt         # Formatage (et simplification)
+    - goimports     # Nettoyage des imports inutiles
+    - errcheck      # Vérifie que toutes les erreurs sont gérées
+    - ineffassign   # Affectations inutilisées
+    - deadcode      # Code mort
+    - unused        # Variables/fonctions inutilisées
+    - gosec         # Analyse de vulnérabilités de sécurité 🔐
+    - revive        # Style / lisibilité avancée
+
+linters-settings:
+  gofmt:
+    simplify: true
+
+  revive:
+    ignore-generated-header: true
+    severity: warning
+    rules:
+      - name: indent-error-flow
+      - name: blank-imports
+      - name: dot-imports
+      - name: var-naming
+      - name: function-length
+        arguments: [80] # Limite lignes/fonction
+
+  gosec:
+    # Ignore quelques règles communes peu pertinentes pour du web simple
+    excludes:
+      - G104 # Ignorer erreurs retournées par 'go run' ou exec.Command
+
+issues:
+  max-issues-per-linter: 0  # 0 = pas de limite
+  max-same-issues: 0
+  exclude-use-default: false
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - errcheck
+
+    - linters:
+        - revive
+      text: "should have comment"
+
+output:
+  format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
